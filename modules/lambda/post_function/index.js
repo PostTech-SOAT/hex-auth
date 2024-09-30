@@ -20,7 +20,7 @@ exports.handler = async (event) => {
           Value: name
         },
         {
-          Name: 'dev:custom:isadmin',
+          Name: 'custom:isadmin',
           Value: "false"
         }
       ]
