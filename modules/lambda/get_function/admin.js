@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const cognito = new AWS.CognitoIdentityServiceProvider();
 
 exports.handler = async (event) => {
-  const cpf = event.cpf;
+  const cpf = event.queryStringParameters.cpf;
 
   if (!cpf) {
     return {
@@ -21,24 +21,32 @@ exports.handler = async (event) => {
   };
   try {
     const data = await cognito.adminGetUser(params).promise();
-    const isAdmin = data.UserAttributes.find(attr => attr.Name === 'dev:custom:isadmin')['Value'];
-    if (isAdmin === 'false') {
-        return {
-            statusCode: 401,
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ message: `Unauthorized User: ${cpf}` })
-        }
+    const isAdmin = data.UserAttributes.find(attr => attr.Name === 'custom:isadmin')['Value'];
+
+    const response = function (principalId, effect, resource) {
+      let authResponse = {};
+      authResponse.principalId = principalId;
+
+      if (effect && resource) {
+
+        let policyDocument = {};
+        policyDocument.Version = '2012-10-17';
+        policyDocument.Statement = [];
+        let statementOne = {};
+        statementOne.Action = 'execute-api:Invoke';
+        statementOne.Effect = effect;
+        statementOne.Resource = resource;
+        policyDocument.Statement[0] = statementOne;
+        authResponse.policyDocument = policyDocument;
+      }
+      return authResponse;
     }
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ message: `User found: ${cpf}` })
-    };
+    if (isAdmin === 'false') {
+      return response('user', 'Deny', event.methodArn);
+    }
+
+    return response('user', 'Allow', event.methodArn);
 
   } catch (error) {
     if (error.code === 'UserNotFoundException') {
