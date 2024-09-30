@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "this" {
-  for_each = { for idx, value in var.lambda_config : idx => value }
+  for_each         = { for idx, value in var.lambda_config : idx => value }
   filename         = "${path.module}/${each.value.directory_name}/${each.value.zip_file_name}"
   function_name    = each.value.function_name
   role             = var.lambda_execution_role_arn
@@ -11,9 +11,5 @@ resource "aws_lambda_function" "this" {
     variables = {
       USER_POOL_ID = "${var.cognito_user_pool_id}"
     }
-  }
-
-  tags = {
-    Authorizer = each.value.is_authorizer ? "true" : "false"
   }
 }
