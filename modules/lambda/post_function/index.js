@@ -2,26 +2,26 @@ const AWS = require('aws-sdk');
 const cognito = new AWS.CognitoIdentityServiceProvider();
 
 exports.handler = async (event) => {
-  const body = JSON.parse(event.body);
+  const body = JSON.parse(JSON.stringify(event));
   const { email, cpf, name } = body;
   const userPoolId = process.env.USER_POOL_ID;
 
   try {
     const params = {
       UserPoolId: userPoolId,
-      Username: email,
+      Username: cpf,
       UserAttributes: [
         {
           Name: 'email',
           Value: email
         },
         {
-          Name: 'custom:cpf',
-          Value: cpf
-        },
-        {
           Name: 'name',
           Value: name
+        },
+        {
+          Name: 'custom:isadmin',
+          Value: "false"
         }
       ]
     };

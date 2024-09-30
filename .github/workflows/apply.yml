@@ -1,0 +1,35 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches:
+      - main
+  # pull_request_review:
+  #   types: [submitted]
+env:
+  aws_region: us-east-1
+  terraform_version: 1.6.5
+  terraform_directory: ./
+  terragrunt_version: 0.67.10
+  tfvars_file_name: deploy.hcl
+  # pr_number: ${{ github.event.pull_request.number }}
+
+jobs:
+  terraform_apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Terraform Apply
+        uses: ./.github/apply
+        with:
+          terraform_version: ${{ env.terraform_version }}
+          terraform_directory: ${{ env.terraform_directory }}
+          # pr_number: ${{ steps.find_pr.outputs.number }}
+          aws_region: ${{ env.aws_region }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_session_token: ${{ secrets.AWS_SESSION_TOKEN }}
+          github_token: ${{ secrets.MY_GITHUB_TOKEN }}
+          terragrunt_version: ${{ env.terragrunt_version }}
+          tfvars_file_name: ${{ env.tfvars_file_name }}

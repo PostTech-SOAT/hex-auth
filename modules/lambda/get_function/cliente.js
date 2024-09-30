@@ -21,15 +21,12 @@ exports.handler = async (event) => {
   };
   try {
     const data = await cognito.adminGetUser(params).promise();
-    const nameAttribute = data.UserAttributes.find(attr => attr.Name === 'name');
-    const name = nameAttribute.Value;
-
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ message: `User found: ${name}` })
+      body: JSON.stringify({ message: `User found: ${cpf}` })
     };
 
   } catch (error) {

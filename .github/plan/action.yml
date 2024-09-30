@@ -1,0 +1,107 @@
+name: "CI - Lambda"
+description: "Validar plano de subida para deploy de insfraestrutura base"
+inputs:
+  terraform_version:
+    description: "Versão do Terraform"
+    required: true
+    default: "1.6.5"
+  terragrunt_version:
+    description: "Versão do Terragrunt"
+    required: true
+  tfvars_file_name:
+    description: "Nome do arquivo de variáveis"
+    required: true
+  terraform_directory:
+    description: "Diretório do Terraform"
+    required: true
+  pr_number:
+    description: "Número da PR"
+    required: true
+  aws_region:
+    description: "Região da AWS"
+    required: true
+  aws_access_key_id:
+    description: "ID da chave de acesso da AWS"
+    required: true
+  aws_secret_access_key:
+    description: "Chave de acesso secreta da AWS"
+    required: true
+  aws_session_token:
+    description: "Token de sessão da AWS"
+    required: true
+  github_token:
+    description: "Token de acesso ao GitHub"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        aws-session-token: ${{ inputs.aws_session_token }}
+        aws-region: ${{ inputs.aws_region }}
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ inputs.terraform_version }}
+        terraform_wrapper: false
+
+    - name: Setup Terragrunt
+      shell: bash
+      run: |
+        tg_version="${{ inputs.terragrunt_version }}"
+        echo "Setting up Terragrunt with version $tg_version"
+        curl -L -o terragrunt_linux_amd64 https://github.com/gruntwork-io/terragrunt/releases/download/v${tg_version}/terragrunt_linux_amd64
+        chmod +x terragrunt_linux_amd64
+        mv terragrunt_linux_amd64 /usr/local/bin/terragrunt
+
+    - name: Terraform Init
+      id: init
+      working-directory: ${{ inputs.terraform_directory }}
+      shell: bash
+      run: |
+        terragrunt init --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }}
+
+    - name: Terraform Plan
+      id: plan
+      working-directory: ${{ inputs.terraform_directory }}
+      shell: bash
+      run: |
+        echo 'plan<<EOF' >> $GITHUB_OUTPUT
+        terragrunt plan --terragrunt-non-interactive --terragrunt-config ./terragrunt/${{ inputs.tfvars_file_name }} >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
+
+    - name: Upload Plan
+      id: upload-plan
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ inputs.pr_number }}-tf-plan
+        path: ${{ inputs.terraform_directory }}/tfplan
+
+    - name: Comment PR
+      id: comment
+      uses: actions/github-script@v4
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          github.issues.createComment({
+            issue_number: ${{ inputs.pr_number }},
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `
+              Terraform Plan:
+
+              \`\`\`
+              ${{ steps.plan.outputs.plan }}
+              \`\`\`
+
+              Plan salvo no GitHub Artifacts.
+            `
+          })
