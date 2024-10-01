@@ -28,13 +28,13 @@ cognito_schema_definition = [
   }
 ]
 
-  cognito_password_policy = {
-    minimum_length    = 6
-    require_lowercase = false
-    require_numbers   = false
-    require_symbols   = false
-    require_uppercase = false
-  }
+cognito_password_policy = {
+  minimum_length    = 6
+  require_lowercase = false
+  require_numbers   = false
+  require_symbols   = false
+  require_uppercase = false
+}
 
 ##############################################################################
 #                      LAMBDA                                                #
@@ -44,8 +44,8 @@ lambda_config = [
     function_name  = "CriarClienteCognito"
     directory_name = "post_function"
     zip_file_name  = "main.zip"
-    handler        = "lambda.handler"
-    runtime        = "nodejs18.x"
+    handler        = "index.handler"
+    runtime        = "nodejs16.x"
     timeout        = 30
     is_authorizer  = false
   },
@@ -54,7 +54,7 @@ lambda_config = [
     directory_name = "get_function"
     zip_file_name  = "cliente.zip"
     handler        = "index.handler"
-    runtime        = "nodejs18.x"
+    runtime        = "nodejs16.x"
     timeout        = 30
     is_authorizer  = false
   },
@@ -63,7 +63,7 @@ lambda_config = [
     directory_name = "get_function"
     zip_file_name  = "admin.zip"
     handler        = "index.handler"
-    runtime        = "nodejs18.x"
+    runtime        = "nodejs16.x"
     timeout        = 30
     is_authorizer  = true
   }
